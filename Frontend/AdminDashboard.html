@@ -19,7 +19,31 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg-body); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+        body { 
+            background: var(--bg-body); 
+            color: var(--text-main); 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Blobs */
+        body::before {
+            content: ''; position: absolute; top: -100px; right: -100px; width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(21, 128, 61, 0.05) 0%, transparent 70%);
+            z-index: -1; animation: float 10s ease-in-out infinite;
+        }
+        body::after {
+            content: ''; position: absolute; bottom: -100px; left: -100px; width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+            z-index: -1; animation: float 15s ease-in-out infinite reverse;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, 40px); }
+        }
 
         /* Top Navigation */
         .top-nav {
@@ -83,10 +107,27 @@
 
         /* Stats Blocks */
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
-        .stat-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .stat-card { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 24px; 
+            border: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); 
+            border-color: var(--primary-soft);
+        }
+        
         .stat-top { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
         
-        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .stat-card:hover .stat-icon { transform: scale(1.1) rotate(5deg); }
+        
         .stat-icon svg { width: 22px; height: 22px; }
         .icon-green { background: #15803d; color: white; }
         .icon-blue { background: #2563eb; color: white; }
@@ -99,7 +140,16 @@
         .stat-bottom:hover { color: var(--primary); }
 
         /* Dashboard Body */
-        .card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 40px; }
+        .card { 
+            background: white; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            padding: 24px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02); 
+            margin-bottom: 40px; 
+            transition: 0.3s;
+        }
+        .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .card-header h3 { font-size: 16px; font-weight: 700; color: var(--text-main); }
         
@@ -145,7 +195,99 @@
 
         .btn-cancel { background: white; border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; color: var(--text-main); }
         .btn-save { background: var(--primary); color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+        /* Glassmorphism & Premium UI */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.5s ease forwards; }
+
+        /* Responsive Breakpoints & Helpers */
+        @media (max-width: 1024px) {
+            .nav-container { grid-template-columns: auto 1fr; }
+            .top-search { width: 240px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            :root { --nav-height: auto; }
+            .top-nav { position: relative; padding: 16px 0; }
+            .nav-container { 
+                display: flex; 
+                flex-direction: column; 
+                gap: 16px; 
+                height: auto; 
+                align-items: stretch;
+            }
+            .nav-right { justify-content: space-between; }
+            .top-search { width: 100%; margin: 0 !important; }
+            
+            .header-area { flex-direction: column; align-items: flex-start; gap: 16px; }
+            .header-actions { width: 100%; }
+            .btn-primary { width: 100%; justify-content: center; }
+            
+            .stats-grid { grid-template-columns: 1fr; }
+            
+            /* Responsive Table (Card Layout) */
+            .table-wrapper { border: none; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { 
+                background: white; 
+                border-radius: 12px; 
+                margin-bottom: 16px; 
+                border: 1px solid var(--border);
+                padding: 16px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            }
+            td { 
+                border: none; 
+                border-bottom: 1px dashed var(--border); 
+                position: relative; 
+                padding: 12px 0 12px 45%; 
+                min-height: 40px;
+                text-align: right;
+            }
+            td:last-child { border-bottom: none; }
+            td:before { 
+                position: absolute; 
+                top: 50%; 
+                left: 0; 
+                width: 40%; 
+                padding-right: 10px; 
+                white-space: nowrap; 
+                transform: translateY(-50%);
+                text-align: left;
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                content: attr(data-label);
+            }
+            
+            .profile-cell { justify-content: flex-end; }
+            .action-btns { justify-content: flex-end; }
+            
+            /* Modal Responsive */
+            .modal { padding: 24px; margin: 10px; border-radius: 12px; }
+            .form-grid { grid-template-columns: 1fr; gap: 16px; }
+            .form-group.full { grid-column: span 1; }
+            .modal-footer { flex-direction: column; }
+            .btn-cancel, .btn-save { width: 100%; }
+            
+            .admin-footer { flex-direction: column; gap: 16px; text-align: center; }
+        }
+
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
+
 </head>
 <body>
 
@@ -185,8 +327,8 @@
         </div>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-card">
+    <div class="stats-grid animate-in">
+        <div class="stat-card glass-card">
             <div class="stat-top">
                 <div class="stat-icon icon-green"><i data-feather="file-text"></i></div>
                 <div class="stat-info">
@@ -198,7 +340,7 @@
                 View detail records <i data-feather="arrow-right" style="width: 14px;"></i>
             </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card glass-card">
             <div class="stat-top">
                 <div class="stat-icon icon-blue"><i data-feather="check-square"></i></div>
                 <div class="stat-info">
@@ -210,7 +352,7 @@
                 View detail records <i data-feather="arrow-right" style="width: 14px;"></i>
             </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card glass-card">
             <div class="stat-top">
                 <div class="stat-icon icon-orange"><i data-feather="clock"></i></div>
                 <div class="stat-info">
@@ -224,7 +366,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card glass-card animate-in" style="animation-delay: 0.1s;">
         <div class="card-header">
             <h3>Student Master Directory</h3>
             <button class="btn-outline" onclick="fetchStudents()" title="Refresh Data" style="padding: 6px 12px;">
@@ -415,12 +557,12 @@
 
             var safeReg = (s.reg_no || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
             tr.innerHTML =
-                '<td><div class="profile-cell"><div class="profile-initial">'+initials+'</div><div class="profile-text"><h4>'+(s.name||'Unknown')+'</h4><p>'+(s.email||'No email')+'</p></div></div></td>'+
-                '<td><div style="font-weight:600;color:var(--text-main);font-family:monospace;">'+(s.reg_no||'N/A')+'</div><div style="font-size:12px;color:var(--text-muted);">'+(s.department||'N/A')+'</div></td>'+
-                '<td><div style="font-weight:600;color:var(--text-main);">'+(s.project_title||'Untitled')+'</div><div style="font-size:12px;color:var(--text-muted);">'+(s.technology_used||'N/A')+'</div></td>'+
-                '<td><div style="font-weight:600;color:var(--text-main);font-size:12px;margin-bottom:2px;">Report: '+(s.report_submission||'Pending')+'</div><div style="font-size:11px;color:var(--text-muted);">S1: '+(s.ee_sem1_grade||'-')+', S2: '+(s.ee_sem2_grade||'-')+'</div></td>'+
-                '<td><span class="badge '+statusClass+'">'+statusDisplay+'</span></td>'+
-                '<td><div class="action-btns"><button class="btn-icon btn-edit" data-reg="'+safeReg+'"><i data-feather="edit-2"></i></button><button class="btn-icon btn-delete" data-reg="'+safeReg+'"><i data-feather="trash-2"></i></button></div></td>';
+                '<td data-label="Applicant Details"><div class="profile-cell"><div class="profile-initial">'+initials+'</div><div class="profile-text"><h4>'+(s.name||'Unknown')+'</h4><p>'+(s.email||'No email')+'</p></div></div></td>'+
+                '<td data-label="Reg No / Dept"><div style="font-weight:600;color:var(--text-main);font-family:monospace;">'+(s.reg_no||'N/A')+'</div><div style="font-size:12px;color:var(--text-muted);">'+(s.department||'N/A')+'</div></td>'+
+                '<td data-label="Project & Technology"><div style="font-weight:600;color:var(--text-main);">'+(s.project_title||'Untitled')+'</div><div style="font-size:12px;color:var(--text-muted);">'+(s.technology_used||'N/A')+'</div></td>'+
+                '<td data-label="Evaluation"><div style="font-weight:600;color:var(--text-main);font-size:12px;margin-bottom:2px;">Report: '+(s.report_submission||'Pending')+'</div><div style="font-size:11px;color:var(--text-muted);">S1: '+(s.ee_sem1_grade||'-')+', S2: '+(s.ee_sem2_grade||'-')+'</div></td>'+
+                '<td data-label="Review Status"><span class="badge '+statusClass+'">'+statusDisplay+'</span></td>'+
+                '<td data-label="Actions"><div class="action-btns"><button class="btn-icon btn-edit" data-reg="'+safeReg+'"><i data-feather="edit-2"></i></button><button class="btn-icon btn-delete" data-reg="'+safeReg+'"><i data-feather="trash-2"></i></button></div></td>';
             tbody.appendChild(tr);
         });
         feather.replace();

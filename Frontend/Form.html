@@ -16,7 +16,8 @@
             --success: #059669;
             --text-main: #0f172a;
             --text-muted: #475569;
-            --glass-bg: rgba(255, 255, 255, 0.85); /* Increased opacity */
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            /* Increased opacity */
             --glass-border: rgba(255, 255, 255, 0.9);
             --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
             --bg-gradient: linear-gradient(135deg, #f0fdfa 0%, #f1f5f9 100%);
@@ -434,7 +435,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .btn-submit.loading {
@@ -495,12 +498,14 @@
             justify-content: center;
             min-height: 140px;
         }
+
         .drop-zone.dragover {
             border-color: var(--primary);
             background: rgba(99, 102, 241, 0.05);
             transform: scale(1.02);
             box-shadow: 0 0 15px rgba(13, 148, 136, 0.2);
         }
+
         .drop-zone input[type="file"] {
             position: absolute;
             width: 100%;
@@ -511,8 +516,16 @@
             cursor: pointer;
             z-index: 2;
         }
-        .drop-zone-content { z-index: 1; pointer-events: none; }
-        .drop-zone-content.hidden { display: none; }
+
+        .drop-zone-content {
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .drop-zone-content.hidden {
+            display: none;
+        }
+
         .drop-zone-file {
             width: 100%;
             z-index: 3;
@@ -525,49 +538,159 @@
             gap: 12px;
             position: relative;
         }
-        .drop-zone-file.hidden { display: none; }
-        .file-info { display: flex; align-items: center; gap: 10px; text-align: left; }
+
+        .drop-zone-file.hidden {
+            display: none;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+        }
+
         .file-name {
-            font-weight: 600; font-size: 14px; color: var(--text-main);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 250px;
         }
-        .file-size { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+
+        .file-size {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
         .progress-container {
-            width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
         }
+
         .progress-bar-upload {
-            height: 100%; width: 0%; background: linear-gradient(90deg, var(--success), #34d399); transition: width 0.3s ease;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--success), #34d399);
+            transition: width 0.3s ease;
         }
+
         .remove-btn {
-            position: absolute; top: -10px; right: -10px; background: white; border: 1px solid #e2e8f0;
-            border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; color: #ef4444; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: all 0.2s; padding: 0; z-index: 5;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #ef4444;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            padding: 0;
+            z-index: 5;
         }
-        button.remove-btn::after { display: none; }
-        .remove-btn:hover { transform: scale(1.1); background: #fee2e2; }
+
+        button.remove-btn::after {
+            display: none;
+        }
+
+        .remove-btn:hover {
+            transform: scale(1.1);
+            background: #fee2e2;
+        }
 
         /* ---------------- SUCCESS ANIMATION ---------------- */
-        .success-icon-wrapper { margin: 0 auto 30px; width: 80px; height: 80px; transform: translateZ(40px); }
-        .checkmark__circle {
-            stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke-miterlimit: 10;
-            stroke: var(--success); fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        .success-icon-wrapper {
+            margin: 0 auto 30px;
+            width: 80px;
+            height: 80px;
+            transform: translateZ(40px);
         }
+
+        .checkmark__circle {
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            stroke-width: 2;
+            stroke-miterlimit: 10;
+            stroke: var(--success);
+            fill: none;
+            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+
         .checkmark {
-            width: 80px; height: 80px; border-radius: 50%; display: block; stroke-width: 2; stroke: #fff;
-            stroke-miterlimit: 10; margin: 0 auto; box-shadow: inset 0px 0px 0px var(--success);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: block;
+            stroke-width: 2;
+            stroke: #fff;
+            stroke-miterlimit: 10;
+            margin: 0 auto;
+            box-shadow: inset 0px 0px 0px var(--success);
             animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
         }
+
         .checkmark__check {
-            transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48;
+            transform-origin: 50% 50%;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
             animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
         }
-        @keyframes stroke { 100% { stroke-dashoffset: 0; } }
-        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
-        @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 50px var(--success); } }
 
-        #successState { opacity: 0; transform: scale(0.95); transition: all 0.5s ease; pointer-events: none; }
-        #successState.active { opacity: 1; transform: scale(1); pointer-events: auto; }
-        
+        @keyframes stroke {
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes scale {
+
+            0%,
+            100% {
+                transform: none;
+            }
+
+            50% {
+                transform: scale3d(1.1, 1.1, 1);
+            }
+        }
+
+        @keyframes fill {
+            100% {
+                box-shadow: inset 0px 0px 0px 50px var(--success);
+            }
+        }
+
+        #successState {
+            display: none;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        #successState.visible {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #successState.fade-in {
+            opacity: 1;
+            transform: scale(1);
+        }
+
         /* ---------------- STAFF ICON ---------------- */
         .staff-icon {
             position: fixed;
@@ -633,7 +756,7 @@
                 </div>
             </div>
 
-           <form action="http://127.0.0.1:5000/submit" method="POST" enctype="multipart/form-data">
+            <form action="http://127.0.0.1:5000/submit" method="POST" enctype="multipart/form-data">
                 <div class="form-container">
 
                     <!-- STEP 1: Student Details -->
@@ -770,18 +893,24 @@
                                 <div class="drop-zone" id="dropZone">
                                     <input type="file" name="file" id="fileInput" accept="application/pdf" required>
                                     <div class="drop-zone-content" id="dropZoneContent">
-                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary); margin-bottom: 10px;">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                            stroke-linejoin="round" style="color: var(--primary); margin-bottom: 10px;">
                                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                             <polyline points="17 8 12 3 7 8"></polyline>
                                             <line x1="12" y1="3" x2="12" y2="15"></line>
                                         </svg>
-                                        <p style="font-size: 15px; font-weight: 500; margin-bottom: 5px;">Drag & Drop your PDF here</p>
+                                        <p style="font-size: 15px; font-weight: 500; margin-bottom: 5px;">Drag & Drop
+                                            your PDF here</p>
                                         <p style="font-size: 13px; color: var(--text-muted);">or click to browse</p>
                                     </div>
                                     <div class="drop-zone-file hidden" id="dropZoneFile">
                                         <div class="file-info">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success);">
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round" style="color: var(--success);">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z">
+                                                </path>
                                                 <polyline points="14 2 14 8 20 8"></polyline>
                                                 <line x1="16" y1="13" x2="8" y2="13"></line>
                                                 <line x1="16" y1="17" x2="8" y2="17"></line>
@@ -794,7 +923,12 @@
                                             <div class="progress-bar-upload" id="uploadProgressBar"></div>
                                         </div>
                                         <button type="button" class="remove-btn" id="removeFileBtn">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                            </svg>
                                         </button>
                                     </div>
                                 </div>
@@ -857,15 +991,11 @@
             </form>
 
             <!-- Success State -->
-            <div id="successState" class="hidden" style="text-align: center; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                <div class="success-icon-wrapper">
-                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                        <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-                        <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                    </svg>
-                </div>
+            <div id="successState" style="text-align: center; padding: 40px 20px;">
+                <div class="success-icon-wrapper" id="checkmarkBox"></div>
                 <h2 style="font-size: 32px; font-weight: 700; color: var(--text-main); margin-bottom: 15px;">Submission Successful!</h2>
-                <p style="color: var(--text-muted); font-size: 16px; max-width: 450px; line-height: 1.6; margin: 0 auto 30px;">Thank you for submitting your project information! We look forward to connecting with you on your next submission.</p>
+                <p style="color: var(--text-muted); font-size: 16px; max-width: 450px; line-height: 1.6; margin: 0 auto 30px;">
+                    Thank you for submitting your project information! We look forward to connecting with you on your next submission.</p>
             </div>
         </div>
     </div>
@@ -1021,68 +1151,67 @@
         }
 
         const form = document.querySelector('form');
+        let isSubmitting = false;
+        let successShown = false;
+
         form.addEventListener('submit', function (e) {
             e.preventDefault();
-            e.stopPropagation();
 
-            if (submitBtn.classList.contains('loading')) return;
+            if (isSubmitting) return;
+            isSubmitting = true;
 
-            submitBtn.innerHTML = '<span class="spinner"></span> Submitting Master Request...';
+            const submitBtn = document.getElementById("submitBtn");
+            const backBtn = document.getElementById("backBtn");
+
+            submitBtn.innerHTML = '<span class="spinner"></span> Submitting...';
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
+            backBtn.disabled = true;
 
             const formData = new FormData(form);
 
             fetch(form.action, {
-                method: form.method,
+                method: 'POST',
                 body: formData
-            }).then(response => {
-                // Success case - transition to completion state
-                showSuccess();
-            }).catch(error => {
+            }).then(function() {
+                triggerSuccess();
+            }).catch(function(error) {
                 console.error('Submission Error:', error);
-                // Fail gracefully but show success for UX consistency as per requirements
-                showSuccess(); 
+                triggerSuccess();
             });
-            
-            return false;
         });
 
-        function showSuccess() {
-            // Lock UI and hide all form containers
-            document.body.style.pointerEvents = "none";
-            
-            const elementsToHide = [
-                document.querySelector('.title'),
-                document.querySelector('.stepper-wrapper'),
-                document.querySelector('.buttons'),
-                form
-            ];
-            
-            elementsToHide.forEach(el => {
-                if(el) {
+        function triggerSuccess() {
+            if (successShown) return;
+            successShown = true;
+
+            // 1) Fade out form elements
+            var toHide = [document.querySelector('.title'), document.querySelector('.stepper-wrapper'), document.querySelector('.buttons'), form];
+            toHide.forEach(function(el) {
+                if (el) {
+                    el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
                     el.style.opacity = '0';
                     el.style.transform = 'translateY(-20px)';
-                    el.style.transition = 'all 0.5s ease';
-                    setTimeout(() => el.classList.add('hidden'), 500);
                 }
             });
-            
-            const successState = document.getElementById('successState');
-            if (successState) {
-                setTimeout(() => {
-                    successState.classList.remove('hidden');
-                    successState.offsetHeight; // Force reflow
-                    successState.classList.add('active');
-                    document.body.style.pointerEvents = "auto";
-                    
-                    // Smooth scroll to success message
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    
-                    // Ensure panel fits animation
-                    document.querySelector('.glass-panel').style.minHeight = '450px';
-                }, 400);
-            }
+
+            // 2) After fade-out completes, swap in success
+            setTimeout(function() {
+                toHide.forEach(function(el) { if (el) el.style.display = 'none'; });
+
+                // Inject fresh SVG so CSS keyframe animations replay from scratch
+                var box = document.getElementById('checkmarkBox');
+                box.innerHTML = '<svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52"><circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/><path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg>';
+
+                var ss = document.getElementById('successState');
+                ss.classList.add('visible');
+                ss.offsetHeight; // force reflow
+                ss.classList.add('fade-in');
+
+                document.querySelector('.glass-panel').style.minHeight = '450px';
+                document.body.style.pointerEvents = 'auto';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 500);
         }
 
         const fileInput = document.getElementById('fileInput');
@@ -1125,7 +1254,7 @@
 
             removeFileBtn.addEventListener('click', (e) => {
                 e.preventDefault(); e.stopPropagation();
-                fileInput.value = ''; 
+                fileInput.value = '';
                 dropZoneFile.classList.add('hidden');
                 dropZoneContent.classList.remove('hidden');
             });
@@ -1138,19 +1267,19 @@
                 }
                 if (file.size > 5 * 1024 * 1024) {
                     alert("File must be under 5MB");
-                    fileInput.value = ''; 
+                    fileInput.value = '';
                     return;
                 }
-                
+
                 // Update UI details
                 fileNameEl.textContent = file.name;
                 const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
                 fileSizeEl.textContent = `${sizeInMB} MB`;
-                
+
                 // Swap views
                 dropZoneContent.classList.add('hidden');
                 dropZoneFile.classList.remove('hidden');
-                
+
                 // Animate progress bar filling effect
                 uploadProgressBar.style.width = '0%';
                 setTimeout(() => uploadProgressBar.style.width = '42%', 150);
@@ -1164,7 +1293,8 @@
 
     <!-- Staff Access Icon -->
     <a href="AdminLogin.html" class="staff-icon" title="Staff Portal">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
         </svg>

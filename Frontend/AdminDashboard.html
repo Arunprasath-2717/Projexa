@@ -352,201 +352,123 @@
 
     async function fetchStudents() {
         document.getElementById('loader').style.display = 'block';
+        document.getElementById('noData').style.display = 'none';
         try {
-            // Appended cache-busting timestamp to guarantee fresh DB fetch
-            const res = await fetch(`${API_BASE}/students?t=${new Date().getTime()}`, {
+            var res = await fetch(API_BASE + '/students?t=' + Date.now(), {
                 cache: 'no-store',
                 headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
             });
-            const data = await res.json();
-            if(Array.isArray(data)) { students = data; }
-            
-            if (currentView === 'all') renderUI(students);
-            else updateNav(currentView);
+            if (!res.ok) throw new Error('Server ' + res.status);
+            var data = await res.json();
+            if (Array.isArray(data)) students = data;
+            handleSearch();
         } catch (e) {
-            console.error(e);
+            console.error('Fetch error:', e);
+            document.getElementById('noData').style.display = 'block';
+            document.getElementById('noData').textContent = 'Failed to load. Is the server running?';
         }
         document.getElementById('loader').style.display = 'none';
     }
 
-    const checkIsApproved = (statusStr) => {
-        if (!statusStr) return false;
-        return statusStr.trim().toLowerCase() === 'approved';
-    };
+    function isApprovedStatus(s) {
+        return s ? s.trim().toLowerCase() === 'approved' : false;
+    }
 
     function renderUI(dataToRender) {
-        const tbody = document.getElementById('tableBody');
+        var tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
-        
         displayedStudents = dataToRender || students;
-        const data = displayedStudents;
+        var data = displayedStudents;
 
-        document.getElementById('stat-total').innerText = students.length.toString().padStart(3, '0');
-        document.getElementById('stat-approved').innerText = students.filter(s => checkIsApproved(s.review_status)).length.toString().padStart(3, '0');
-        document.getElementById('stat-pending').innerText = students.filter(s => !checkIsApproved(s.review_status)).length.toString().padStart(3, '0');
-        
-        if (document.getElementById('count-pending')) 
-            document.getElementById('count-pending').innerText = students.filter(s => !checkIsApproved(s.review_status)).length;
-        if (document.getElementById('count-approved'))
-            document.getElementById('count-approved').innerText = students.filter(s => checkIsApproved(s.review_status)).length;
+        var totalCount = students.length;
+        var approvedCount = students.filter(function(s) { return isApprovedStatus(s.review_status); }).length;
+        var pendingCount = totalCount - approvedCount;
 
-        if (data.length === 0) { document.getElementById('noData').style.display = 'block'; return; }
+        document.getElementById('stat-total').textContent = String(totalCount).padStart(3, '0');
+        document.getElementById('stat-approved').textContent = String(approvedCount).padStart(3, '0');
+        document.getElementById('stat-pending').textContent = String(pendingCount).padStart(3, '0');
+
+        if (data.length === 0) {
+            document.getElementById('noData').style.display = 'block';
+            document.getElementById('noData').textContent = 'No records found.';
+            return;
+        }
         document.getElementById('noData').style.display = 'none';
 
-        data.forEach(s => {
-            const tr = document.createElement('tr');
-            
-            let rawStatus = s.review_status || 'Pending';
-            let normStatus = rawStatus.trim().toLowerCase();
-            let statusDisplay = "Pending";
-            let statusClass = "badge-pending";
+        data.forEach(function(s) {
+            var tr = document.createElement('tr');
+            var rawStatus = (s.review_status || 'Pending').trim();
+            var sl = rawStatus.toLowerCase();
+            var statusDisplay = rawStatus, statusClass = 'badge-pending';
+            if (sl === 'approved') { statusDisplay = 'Approved'; statusClass = 'badge-success'; }
+            else if (sl === 'needs correction') { statusDisplay = 'Needs Correction'; statusClass = 'badge-danger'; }
 
-            if (normStatus === 'approved') {
-                statusDisplay = "Approved";
-                statusClass = "badge-success";
-            } else if (normStatus === 'needs correction') {
-                statusDisplay = "Needs Correction";
-                statusClass = "badge-danger";
-            } else {
-                statusDisplay = rawStatus; // Keep original structure if unique
-            }
-            
-            const reportStatus = s.report_submission || 'Pending';
-            
-            let initials = "NA";
-            if (s.name && s.name.length > 0) {
-                const parts = s.name.trim().split(' ');
-                initials = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : (parts[0][0]).toUpperCase();
+            var initials = 'NA';
+            if (s.name && s.name.trim().length > 0) {
+                var parts = s.name.trim().split(/\s+/);
+                initials = parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0][0].toUpperCase();
             }
 
-            tr.innerHTML = `
-                <td>
-                    <div class="profile-cell">
-                        <div class="profile-initial">${initials}</div>
-                        <div class="profile-text">
-                            <h4>${s.name || 'Unknown'}</h4>
-                            <p>${s.email || 'No email provided'}</p>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div style="font-weight:600; color:var(--text-main); font-family:monospace;">${s.reg_no || 'N/A'}</div>
-                    <div style="font-size:12px; color:var(--text-muted);">${s.department || 'N/A'}</div>
-                </td>
-                <td>
-                    <div style="font-weight:600; color:var(--text-main);">${s.project_title || 'Untitled Project'}</div>
-                    <div style="font-size:12px; color:var(--text-muted);">${s.technology_used || 'N/A'}</div>
-                </td>
-                <td>
-                    <div style="font-weight:600; color:var(--text-main); font-size: 12px; margin-bottom: 2px;">Report: ${reportStatus}</div>
-                    <div style="font-size:11px; color:var(--text-muted);">S1: ${s.ee_sem1_grade || '-'}, S2: ${s.ee_sem2_grade || '-'}</div>
-                </td>
-                <td><span class="badge ${statusClass}">${statusDisplay}</span></td>
-                <td>
-                    <div class="action-btns">
-                        <button class="btn-icon" onclick="openEditModal('${s.reg_no || ''}')"><i data-feather="edit-2"></i></button>
-                        <button class="btn-icon btn-delete" onclick="deleteStudent('${s.reg_no || ''}')"><i data-feather="trash-2"></i></button>
-                    </div>
-                </td>
-            `;
+            var safeReg = (s.reg_no || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+            tr.innerHTML =
+                '<td><div class="profile-cell"><div class="profile-initial">'+initials+'</div><div class="profile-text"><h4>'+(s.name||'Unknown')+'</h4><p>'+(s.email||'No email')+'</p></div></div></td>'+
+                '<td><div style="font-weight:600;color:var(--text-main);font-family:monospace;">'+(s.reg_no||'N/A')+'</div><div style="font-size:12px;color:var(--text-muted);">'+(s.department||'N/A')+'</div></td>'+
+                '<td><div style="font-weight:600;color:var(--text-main);">'+(s.project_title||'Untitled')+'</div><div style="font-size:12px;color:var(--text-muted);">'+(s.technology_used||'N/A')+'</div></td>'+
+                '<td><div style="font-weight:600;color:var(--text-main);font-size:12px;margin-bottom:2px;">Report: '+(s.report_submission||'Pending')+'</div><div style="font-size:11px;color:var(--text-muted);">S1: '+(s.ee_sem1_grade||'-')+', S2: '+(s.ee_sem2_grade||'-')+'</div></td>'+
+                '<td><span class="badge '+statusClass+'">'+statusDisplay+'</span></td>'+
+                '<td><div class="action-btns"><button class="btn-icon btn-edit" data-reg="'+safeReg+'"><i data-feather="edit-2"></i></button><button class="btn-icon btn-delete" data-reg="'+safeReg+'"><i data-feather="trash-2"></i></button></div></td>';
             tbody.appendChild(tr);
         });
-        if(typeof feather !== 'undefined') feather.replace();
+        feather.replace();
     }
 
     function updateNav(view) {
-        currentView = view;
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        
-        if (view === 'all') {
-            const allEl = document.getElementById('nav-all');
-            if (allEl) allEl.classList.add('active');
-        } else {
-            const navId = view === 'Pending' ? 'nav-pending' : 'nav-approved';
-            const tgtEl = document.getElementById(navId);
-            if (tgtEl) tgtEl.classList.add('active');
-        }
+        currentView = (currentView === view && view !== 'all') ? 'all' : view;
         handleSearch();
     }
 
     function handleSearch() {
-        const q = document.getElementById('searchInput').value.toLowerCase().trim();
-        
-        const baseData = currentView === 'all' 
-            ? students 
-            : students.filter(s => {
-                const isApp = checkIsApproved(s.review_status);
-                return currentView === 'Pending' ? !isApp : isApp;
+        var q = document.getElementById('searchInput').value.toLowerCase().trim();
+        var base = students;
+        if (currentView === 'Approved') base = students.filter(function(s){ return isApprovedStatus(s.review_status); });
+        else if (currentView === 'Pending') base = students.filter(function(s){ return !isApprovedStatus(s.review_status); });
+
+        if (q.length > 0) {
+            base = base.filter(function(s) {
+                return (s.name||'').toLowerCase().includes(q) || (s.reg_no||'').toLowerCase().includes(q) ||
+                       (s.project_title||'').toLowerCase().includes(q) || (s.department||'').toLowerCase().includes(q) ||
+                       (s.email||'').toLowerCase().includes(q);
             });
-            
-        const filtered = baseData.filter(s => {
-            const name = s.name ? s.name.toLowerCase() : '';
-            const reg = s.reg_no ? s.reg_no.toLowerCase() : '';
-            const title = s.project_title ? s.project_title.toLowerCase() : '';
-            return name.includes(q) || reg.includes(q) || title.includes(q);
-        });
-        
-        renderUI(filtered);
+        }
+        renderUI(base);
     }
 
     function exportToCSV() {
-        if (!displayedStudents.length) return alert("No records found to export.");
-        
-        const headers = [
-            "Register Number", "Name", "Department", "Team Name", "Team Size", "Faculty Guide", 
-            "Project Title", "Project Domain", "Technology", "Project Description",
-            "Review Status", "Report Status", "S1 Grade", "S2 Grade", "S3 Grade", 
-            "Email", "Phone", "Paper Published", "Journal Type", "Journal Name", "ISBN No", "Other Projects", "Submitted At"
-        ];
-        
-        const csvRows = [];
-        csvRows.push(headers.join(","));
-
-        displayedStudents.forEach(s => {
-            const cleanValue = (val) => {
-                if (val === null || val === undefined || val === '') return 'N/A';
-                let str = val.toString().replace(/\n/g, " ").replace(/"/g, '""');
-                return `"${str}"`;
-            };
-
-            const row = [
-                cleanValue(s.reg_no), cleanValue(s.name), cleanValue(s.department), cleanValue(s.team_name),
-                cleanValue(s.team_size), cleanValue(s.team_guide), cleanValue(s.project_title), cleanValue(s.project_domain),
-                cleanValue(s.technology_used), cleanValue(s.project_description), cleanValue(s.review_status || 'Pending'),
-                cleanValue(s.report_submission || 'Pending'), cleanValue(s.ee_sem1_grade), cleanValue(s.ee_sem2_grade),
-                cleanValue(s.ee_sem3_grade), cleanValue(s.email), cleanValue(s.phone), cleanValue(s.paper_published),
-                cleanValue(s.journal_type), cleanValue(s.journal_name), cleanValue(s.isbn_no), cleanValue(s.other_projects),
-                cleanValue(s.submitted_at)
-            ];
-            csvRows.push(row.join(","));
+        if (!displayedStudents.length) return alert("No records to export.");
+        var hdr = ["Reg No","Name","Department","Team Name","Team Size","Guide","Project Title","Domain","Technology","Description","Review Status","Report","S1","S2","S3","Email","Phone","Paper Published","Journal Type","Journal Name","ISBN","Other Projects","Submitted At"];
+        var rows = [hdr.join(",")];
+        displayedStudents.forEach(function(s) {
+            function cv(v) { if(v==null||v==='') return '"N/A"'; return '"'+String(v).replace(/\n/g,' ').replace(/"/g,'""')+'"'; }
+            rows.push([cv(s.reg_no),cv(s.name),cv(s.department),cv(s.team_name),cv(s.team_size),cv(s.team_guide),cv(s.project_title),cv(s.project_domain),cv(s.technology_used),cv(s.project_description),cv(s.review_status||'Pending'),cv(s.report_submission||'Pending'),cv(s.ee_sem1_grade),cv(s.ee_sem2_grade),cv(s.ee_sem3_grade),cv(s.email),cv(s.phone),cv(s.paper_published),cv(s.journal_type),cv(s.journal_name),cv(s.isbn_no),cv(s.other_projects),cv(s.submitted_at)].join(","));
         });
-
-        const csvString = csvRows.join("\n");
-        const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `projexa_master_report_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        var blob = new Blob(['\ufeff'+rows.join("\n")], {type:'text/csv;charset=utf-8;'});
+        var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+        a.download = 'projexa_report_'+new Date().toISOString().split('T')[0]+'.csv';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
     function openCreateModal() {
         document.getElementById('studentForm').reset();
         document.getElementById('editRegNo').value = '';
         document.getElementById('reg_no').readOnly = false;
-        document.getElementById('modalTitle').innerText = 'Add New Record';
+        document.getElementById('modalTitle').textContent = 'Add New Record';
         document.getElementById('modalOverlay').classList.add('active');
     }
 
     function openEditModal(regNo) {
         if (!regNo) return;
-        const s = students.find(x => x.reg_no === regNo);
-        if (!s) return;
-        
+        var s = students.find(function(x){ return x.reg_no === regNo; });
+        if (!s) { alert('Record not found locally. Try refreshing.'); return; }
         document.getElementById('editRegNo').value = s.reg_no;
         document.getElementById('reg_no').value = s.reg_no;
         document.getElementById('reg_no').readOnly = true;
@@ -559,37 +481,33 @@
         document.getElementById('email').value = s.email || '';
         document.getElementById('phone').value = s.phone || '';
         document.getElementById('technology_used').value = s.technology_used || '';
-        
-        ['team_name', 'team_size', 'project_domain', 'project_description', 'paper_published', 
-        'journal_type', 'journal_name', 'isbn_no', 'other_projects', 'ee_sem1_mark', 'ee_sem2_mark', 'ee_sem3_mark'].forEach(f => {
-            const el = document.getElementById(f);
-            if(el) {
-                const sKey = f.includes('mark') ? f.replace('mark', 'grade') : f;
-                el.value = s[sKey] || '';
-            }
+        ['team_name','team_size','project_domain','project_description','paper_published','journal_type','journal_name','isbn_no','other_projects','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark'].forEach(function(f){
+            var el = document.getElementById(f);
+            if(el) { var k = f.includes('mark') ? f.replace('mark','grade') : f; el.value = s[k] || ''; }
         });
-
-        document.getElementById('modalTitle').innerText = 'Edit Student Record';
+        document.getElementById('modalTitle').textContent = 'Edit Student Record';
         document.getElementById('modalOverlay').classList.add('active');
     }
 
     function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
 
-    document.getElementById('studentForm').addEventListener('submit', async (e) => {
+    document.getElementById('studentForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        const editId = document.getElementById('editRegNo').value;
-        const payload = {
-            reg_no: document.getElementById('reg_no').value,
-            name: document.getElementById('name').value,
+        var editId = document.getElementById('editRegNo').value;
+        var regNo = document.getElementById('reg_no').value.trim();
+        if (!regNo) { alert('Register Number is required.'); return; }
+        if (!document.getElementById('name').value.trim()) { alert('Student Name is required.'); return; }
+
+        var payload = {
+            reg_no: regNo, name: document.getElementById('name').value.trim(),
             department: document.getElementById('department').value,
             review_status: document.getElementById('review_status').value,
-            project_title: document.getElementById('project_title').value,
-            team_guide: document.getElementById('team_guide').value,
+            project_title: document.getElementById('project_title').value.trim(),
+            team_guide: document.getElementById('team_guide').value.trim(),
             report_submission: document.getElementById('report_submission').value,
-            email: document.getElementById('email').value,
-            phone: document.getElementById('phone').value,
-            technology_used: document.getElementById('technology_used').value,
-            
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            technology_used: document.getElementById('technology_used').value.trim(),
             ee_sem1_grade: document.getElementById('ee_sem1_mark').value,
             ee_sem2_grade: document.getElementById('ee_sem2_mark').value,
             ee_sem3_grade: document.getElementById('ee_sem3_mark').value,
@@ -605,39 +523,36 @@
         };
 
         try {
-            const res = await fetch(editId ? `${API_BASE}/update/${encodeURIComponent(editId)}` : `${API_BASE}/admin_create`, {
-                method: editId ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) { 
-                closeModal(); 
-                fetchStudents(); 
-            } else {
-                const err = await res.json().catch(() => ({}));
-                alert("Error saving record: " + (err.error || res.statusText));
-            }
-        } catch (err) { alert("Network error: " + err.message); }
+            var url = editId ? (API_BASE+'/update/'+encodeURIComponent(editId)) : (API_BASE+'/admin_create');
+            var res = await fetch(url, { method: editId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+            if (res.ok) { closeModal(); await fetchStudents(); }
+            else { var e2 = await res.json().catch(function(){return {};}); alert("Error: "+(e2.error||res.statusText)); }
+        } catch(err) { alert("Network error: "+err.message); }
     });
 
-    async function deleteStudent(id) {
-        if (!id) return;
+    async function deleteStudent(regNo) {
+        if (!regNo) return;
         if (!confirm('Permanently delete this student record?')) return;
         try {
-            const res = await fetch(`${API_BASE}/delete/${encodeURIComponent(id)}`, { method: 'DELETE' });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                alert("Error deleting record: " + (err.error || res.statusText));
-            }
-            fetchStudents();
-        } catch (err) { alert("Network error: " + err.message); }
+            var res = await fetch(API_BASE+'/delete/'+encodeURIComponent(regNo), {method:'DELETE'});
+            if (!res.ok) { var e2 = await res.json().catch(function(){return {};}); alert("Delete failed: "+(e2.error||res.statusText)); }
+            await fetchStudents();
+        } catch(err) { alert("Network error: "+err.message); }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // Event delegation for edit/delete buttons in table
+    document.getElementById('tableBody').addEventListener('click', function(e) {
+        var editBtn = e.target.closest('.btn-edit');
+        if (editBtn) { openEditModal(editBtn.getAttribute('data-reg')); return; }
+        var delBtn = e.target.closest('.btn-delete');
+        if (delBtn) { deleteStudent(delBtn.getAttribute('data-reg')); return; }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
         fetchStudents();
         setInterval(fetchStudents, 30000);
     });
 </script>
 </body>
 </html>
+

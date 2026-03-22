@@ -1,0 +1,115 @@
+# ==============================
+# Python
+# ==============================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+.venv-1/
+.venv-2/
+
+# Python distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ==============================
+# Flask
+# ==============================
+
+instance/
+.webassets-cache
+
+# Flask session files
+flask_session/
+
+# ==============================
+# Environment Variables
+# ==============================
+
+.env
+.env.*
+*.env
+
+# ==============================
+# MongoDB
+# ==============================
+
+*.db
+*.sqlite3
+
+# ==============================
+# Uploads (IMPORTANT)
+# ==============================
+
+uploads/
+*.pdf
+*.doc
+*.docx
+
+# ==============================
+# Logs
+# ==============================
+
+*.log
+logs/
+debug.log
+
+# ==============================
+# IDE / Editor
+# ==============================
+
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ==============================
+# OS Files
+# ==============================
+
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Node (if frontend added later)
+# ==============================
+
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ==============================
+# Testing / Coverage
+# ==============================
+
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ==============================
+# Temporary Files
+# ==============================
+
+*.tmp
+*.temp
+*.bak

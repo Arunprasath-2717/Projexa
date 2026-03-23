@@ -464,6 +464,34 @@
                     <input type="text" id="technology_used" placeholder="Frontend, Backend, Database...">
                 </div>
 
+                <div class="form-group">
+                    <label>View Report</label>
+                    <div id="file_viewer" style="margin-top: 5px;">
+                        <span style="font-size: 13px; color: var(--text-muted);">No document uploaded.</span>
+                    </div>
+                </div>
+
+                <div class="form-group full" style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                    <label style="color: var(--primary); font-weight: 800;">Team & Project Specifics</label>
+                </div>
+                
+                <div class="form-group">
+                    <label>Team Name</label>
+                    <input type="text" id="team_name" placeholder="Name of team">
+                </div>
+                <div class="form-group">
+                    <label>Team Size</label>
+                    <input type="number" id="team_size" placeholder="Total members">
+                </div>
+                <div class="form-group">
+                    <label>Project Domain</label>
+                    <input type="text" id="project_domain" placeholder="AI, Cloud, IoT...">
+                </div>
+                <div class="form-group full">
+                    <label>Brief Description</label>
+                    <textarea id="project_description" rows="3" placeholder="Briefly describe the project goals..."></textarea>
+                </div>
+
                 <div class="form-group full" style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 15px;">
                     <label style="color: var(--primary); font-weight: 800;">Publication & Evaluation</label>
                 </div>
@@ -510,11 +538,6 @@
                 <div class="form-group full">
                     <label>Other Projects / Experience</label>
                     <input type="text" id="other_projects" placeholder="Additional background info...">
-                </div>
-
-                <div style="display:none;">
-                    <input type="text" id="team_name"><input type="number" id="team_size">
-                    <input type="text" id="project_domain"><textarea id="project_description"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -704,8 +727,25 @@
             document.getElementById('phone').value = s.phone || '';
             document.getElementById('technology_used').value = s.technology_used || '';
             
-            // Other fields
-            ['team_name','team_size','project_domain','project_description','paper_published','journal_type','journal_name','isbn_no','other_projects','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark'].forEach(function(f){
+            // New Detail Fields
+            document.getElementById('team_name').value = s.team_name || '';
+            document.getElementById('team_size').value = s.team_size || '';
+            document.getElementById('project_domain').value = s.project_domain || '';
+            document.getElementById('project_description').value = s.project_description || '';
+
+            // File Viewer Logic
+            const fileViewer = document.getElementById('file_viewer');
+            if (s.file_name) {
+                const fileUrl = `${API_BASE}/uploads/${encodeURIComponent(s.file_name)}`;
+                fileViewer.innerHTML = `<a href="${fileUrl}" target="_blank" class="btn-outline" style="width: auto; padding: 6px 12px; display: inline-flex; text-decoration: none;">
+                    <i data-feather="external-link" style="width: 14px; margin-right: 5px;"></i> View Submission (PDF)
+                </a>`;
+            } else {
+                fileViewer.innerHTML = `<span style="font-size: 13px; color: var(--text-muted);"><i data-feather="alert-circle" style="width:14px; margin-right:5px;"></i>No document uploaded.</span>`;
+            }
+
+            // Other fields (Marks and Publications)
+            ['paper_published','journal_type','journal_name','isbn_no','other_projects','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark'].forEach(function(f){
                 var el = document.getElementById(f);
                 if(el) { 
                     var k = f.includes('mark') ? f.replace('mark','grade') : f; 
@@ -719,7 +759,7 @@
 
         } catch (e) {
             console.error('Fetch error:', e);
-            alert('Failed to load full student details.');
+            alert('Failed to load student details.');
         } finally {
             editBtn.innerHTML = originalHTML;
             feather.replace();

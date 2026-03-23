@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from pymongo import MongoClient
 import os
@@ -222,6 +222,11 @@ def get_students_full():
             d["submitted_at"] = d["submitted_at"].isoformat()
 
     return jsonify(data)
+
+
+@app.route("/uploads/<filename>")
+def serve_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 
 # ===============================

@@ -464,14 +464,57 @@
                     <input type="text" id="technology_used" placeholder="Frontend, Backend, Database...">
                 </div>
 
+                <div class="form-group full" style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                    <label style="color: var(--primary); font-weight: 800;">Publication & Evaluation</label>
+                </div>
+                
+                <div class="form-group">
+                    <label>Paper Published?</label>
+                    <select id="paper_published">
+                        <option>No</option>
+                        <option>Yes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Journal Type</label>
+                    <select id="journal_type">
+                        <option value="">N/A</option>
+                        <option>Local</option>
+                        <option>National</option>
+                        <option>International</option>
+                        <option>Scopus</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Journal Name</label>
+                    <input type="text" id="journal_name" placeholder="Full name of journal">
+                </div>
+                <div class="form-group">
+                    <label>ISBN Number</label>
+                    <input type="text" id="isbn_no" placeholder="ISBN/ISSN">
+                </div>
+                
+                <div class="form-group">
+                    <label>EE Sem 1 Mark</label>
+                    <input type="text" id="ee_sem1_mark" placeholder="Grade">
+                </div>
+                <div class="form-group">
+                    <label>EE Sem 2 Mark</label>
+                    <input type="text" id="ee_sem2_mark" placeholder="Grade">
+                </div>
+                <div class="form-group">
+                    <label>EE Sem 3 Mark</label>
+                    <input type="text" id="ee_sem3_mark" placeholder="Grade">
+                </div>
+                
+                <div class="form-group full">
+                    <label>Other Projects / Experience</label>
+                    <input type="text" id="other_projects" placeholder="Additional background info...">
+                </div>
+
                 <div style="display:none;">
                     <input type="text" id="team_name"><input type="number" id="team_size">
                     <input type="text" id="project_domain"><textarea id="project_description"></textarea>
-                    <select id="paper_published"><option>No</option><option>Yes</option></select>
-                    <select id="journal_type"><option>N/A</option><option>Local</option></select>
-                    <input type="text" id="journal_name"><input type="text" id="isbn_no">
-                    <input type="text" id="other_projects">
-                    <input type="text" id="ee_sem1_mark"><input type="text" id="ee_sem2_mark"><input type="text" id="ee_sem3_mark">
                 </div>
             </div>
             <div class="modal-footer">
@@ -589,18 +632,40 @@
         renderUI(base);
     }
 
-    function exportToCSV() {
-        if (!displayedStudents.length) return alert("No records to export.");
-        var hdr = ["Reg No","Name","Department","Team Name","Team Size","Guide","Project Title","Domain","Technology","Description","Review Status","Report","S1","S2","S3","Email","Phone","Paper Published","Journal Type","Journal Name","ISBN","Other Projects","Submitted At"];
-        var rows = [hdr.join(",")];
-        displayedStudents.forEach(function(s) {
-            function cv(v) { if(v==null||v==='') return '"N/A"'; return '"'+String(v).replace(/\n/g,' ').replace(/"/g,'""')+'"'; }
-            rows.push([cv(s.reg_no),cv(s.name),cv(s.department),cv(s.team_name),cv(s.team_size),cv(s.team_guide),cv(s.project_title),cv(s.project_domain),cv(s.technology_used),cv(s.project_description),cv(s.review_status||'Pending'),cv(s.report_submission||'Pending'),cv(s.ee_sem1_grade),cv(s.ee_sem2_grade),cv(s.ee_sem3_grade),cv(s.email),cv(s.phone),cv(s.paper_published),cv(s.journal_type),cv(s.journal_name),cv(s.isbn_no),cv(s.other_projects),cv(s.submitted_at)].join(","));
-        });
-        var blob = new Blob(['\ufeff'+rows.join("\n")], {type:'text/csv;charset=utf-8;'});
-        var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-        a.download = 'projexa_report_'+new Date().toISOString().split('T')[0]+'.csv';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    async function exportToCSV() {
+        const btn = document.querySelector('button[onclick="exportToCSV()"]');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i data-feather="loader" class="spin" style="width:14px;"></i> Exporting...';
+        btn.disabled = true;
+        feather.replace();
+
+        try {
+            // Fetch everything for a proper full export
+            const res = await fetch(API_BASE + '/students_full');
+            if (!res.ok) throw new Error('Export failed');
+            const allData = await res.json();
+
+            if (!allData.length) return alert("No records to export.");
+            
+            var hdr = ["Reg No","Name","Department","Team Name","Team Size","Guide","Project Title","Domain","Technology","Description","Review Status","Report","S1","S2","S3","Email","Phone","Paper Published","Journal Type","Journal Name","ISBN","Other Projects","Submitted At"];
+            var rows = [hdr.join(",")];
+            
+            allData.forEach(function(s) {
+                function cv(v) { if(v==null||v==='') return '"N/A"'; return '"'+String(v).replace(/\n/g,' ').replace(/"/g,'""')+'"'; }
+                rows.push([cv(s.reg_no),cv(s.name),cv(s.department),cv(s.team_name),cv(s.team_size),cv(s.team_guide),cv(s.project_title),cv(s.project_domain),cv(s.technology_used),cv(s.project_description),cv(s.review_status||'Pending'),cv(s.report_submission||'Pending'),cv(s.ee_sem1_grade||s.ee_sem1_mark),cv(s.ee_sem2_grade||s.ee_sem2_mark),cv(s.ee_sem3_grade||s.ee_sem3_mark),cv(s.email),cv(s.phone),cv(s.paper_published),cv(s.journal_type),cv(s.journal_name),cv(s.isbn_no),cv(s.other_projects),cv(s.submitted_at)].join(","));
+            });
+            
+            var blob = new Blob(['\ufeff'+rows.join("\n")], {type:'text/csv;charset=utf-8;'});
+            var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+            a.download = 'projexa_full_report_'+new Date().toISOString().split('T')[0]+'.csv';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } catch (e) {
+            alert('Failed to export full report.');
+        } finally {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+            feather.replace();
+        }
     }
 
     function openCreateModal() {
@@ -611,29 +676,77 @@
         document.getElementById('modalOverlay').classList.add('active');
     }
 
-    function openEditModal(regNo) {
+    async function openEditModal(regNo) {
         if (!regNo) return;
-        var s = students.find(function(x){ return x.reg_no === regNo; });
-        if (!s) { alert('Record not found locally. Try refreshing.'); return; }
-        document.getElementById('editRegNo').value = s.reg_no;
-        document.getElementById('reg_no').value = s.reg_no;
-        document.getElementById('reg_no').readOnly = true;
-        document.getElementById('name').value = s.name || '';
-        document.getElementById('department').value = s.department || 'CSE';
-        document.getElementById('review_status').value = s.review_status || 'Pending';
-        document.getElementById('project_title').value = s.project_title || '';
-        document.getElementById('team_guide').value = s.team_guide || '';
-        document.getElementById('report_submission').value = s.report_submission || 'Pending';
-        document.getElementById('email').value = s.email || '';
-        document.getElementById('phone').value = s.phone || '';
-        document.getElementById('technology_used').value = s.technology_used || '';
-        ['team_name','team_size','project_domain','project_description','paper_published','journal_type','journal_name','isbn_no','other_projects','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark'].forEach(function(f){
-            var el = document.getElementById(f);
-            if(el) { var k = f.includes('mark') ? f.replace('mark','grade') : f; el.value = s[k] || ''; }
-        });
-        document.getElementById('modalTitle').textContent = 'Edit Student Record';
-        document.getElementById('modalOverlay').classList.add('active');
+        
+        // Show lightweight loading indication
+        const editBtn = document.querySelector(`.btn-edit[data-reg="${regNo}"]`);
+        const originalHTML = editBtn.innerHTML;
+        editBtn.innerHTML = '<i data-feather="loader" class="spin" style="width:14px;"></i>';
+        feather.replace();
+
+        try {
+            const res = await fetch(`${API_BASE}/student/${encodeURIComponent(regNo)}`);
+            if (!res.ok) throw new Error('Student not found');
+            const s = await res.json();
+            
+            // Populate Modal
+            document.getElementById('editRegNo').value = s.reg_no;
+            document.getElementById('reg_no').value = s.reg_no;
+            document.getElementById('reg_no').readOnly = true;
+            document.getElementById('name').value = s.name || '';
+            document.getElementById('department').value = s.department || 'CSE';
+            document.getElementById('review_status').value = s.review_status || 'Pending';
+            document.getElementById('project_title').value = s.project_title || '';
+            document.getElementById('team_guide').value = s.team_guide || '';
+            document.getElementById('report_submission').value = s.report_submission || 'Pending';
+            document.getElementById('email').value = s.email || '';
+            document.getElementById('phone').value = s.phone || '';
+            document.getElementById('technology_used').value = s.technology_used || '';
+            
+            // Other fields
+            ['team_name','team_size','project_domain','project_description','paper_published','journal_type','journal_name','isbn_no','other_projects','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark'].forEach(function(f){
+                var el = document.getElementById(f);
+                if(el) { 
+                    var k = f.includes('mark') ? f.replace('mark','grade') : f; 
+                    el.value = s[k] || ''; 
+                }
+            });
+
+            document.getElementById('modalTitle').textContent = 'Edit Student Record';
+            document.getElementById('modalOverlay').classList.add('active');
+            toggleAdminConditionalFields();
+
+        } catch (e) {
+            console.error('Fetch error:', e);
+            alert('Failed to load full student details.');
+        } finally {
+            editBtn.innerHTML = originalHTML;
+            feather.replace();
+        }
     }
+
+    // Toggle requirements in Admin Modal
+    function toggleAdminConditionalFields() {
+        const isNo = document.getElementById('paper_published').value === 'No';
+        ['journal_name','isbn_no','journal_type','review_status','report_submission','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark'].forEach(f => {
+            const el = document.getElementById(f);
+            if(el) {
+                el.required = !isNo;
+                const group = el.closest('.form-group') || el.parentElement;
+                if(isNo) group.style.opacity = '0.7';
+                else group.style.opacity = '1';
+                // Adjust labels
+                const label = group.querySelector('label');
+                if(label) {
+                    if(isNo) label.innerHTML = label.innerText.replace(' *', '') + ' (Optional)';
+                    else if(!label.innerText.includes('*') && !label.innerText.includes('Optional')) label.innerHTML += ' *';
+                }
+            }
+        });
+    }
+
+    document.getElementById('paper_published').addEventListener('change', toggleAdminConditionalFields);
 
     function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
 

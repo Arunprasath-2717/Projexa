@@ -1113,6 +1113,61 @@
             }
         }
 
+        // --- Toggle Logic for Journal & Review Details ---
+        const paperPublishedSelect = document.querySelector('select[name="paper_published"]');
+        if (paperPublishedSelect) {
+            paperPublishedSelect.addEventListener('change', toggleConditionalFields);
+        }
+
+        function toggleConditionalFields() {
+            const status = paperPublishedSelect.value;
+            const isNo = (status === "No");
+            
+            // Fields to toggle requirement
+            const journalFields = [
+                document.querySelector('input[name="journal_name"]'),
+                document.querySelector('input[name="isbn_no"]'),
+                document.querySelector('select[name="journal_type"]')
+            ];
+            const reviewFields = [
+                document.querySelector('select[name="review_status"]'),
+                document.querySelector('select[name="report_submission"]'),
+                document.querySelector('input[name="ee_sem1_mark"]'),
+                document.querySelector('input[name="ee_sem2_mark"]'),
+                document.querySelector('input[name="ee_sem3_mark"]')
+            ];
+
+            const allFields = [...journalFields, ...reviewFields];
+
+            allFields.forEach(field => {
+                if (field) {
+                    field.required = !isNo;
+                    const group = field.closest('.input-group');
+                    if (group) {
+                        if (isNo) {
+                            group.style.opacity = "0.6";
+                            group.style.transition = "opacity 0.3s ease";
+                            // Optionally reset value
+                            if (field.tagName === 'SELECT') { if(!field.value) field.selectedIndex = 0; }
+                        } else {
+                            group.style.opacity = "1";
+                        }
+                    }
+                }
+            });
+            
+            // Special labels updates
+            reviewFields.forEach(field => {
+                if (field) {
+                    const label = field.parentElement.querySelector('label');
+                    if (label) {
+                        if (isNo) label.innerHTML = label.innerText.replace(' *', '') + ' (Optional)';
+                        else label.innerHTML = label.innerText.replace(' (Optional)', '') + (label.innerText.includes('*') ? '' : ' *');
+                    }
+                }
+            });
+        }
+
         function showError(input, message) {
             let errorMsg = input.parentElement.querySelector('.error-msg');
             if (!errorMsg) {
@@ -1222,6 +1277,7 @@
 
             const submitBtn = document.getElementById("submitBtn");
             const backBtn = document.getElementById("backBtn");
+            const originalContent = submitBtn.innerHTML;
 
             submitBtn.innerHTML = '<span class="spinner"></span> Submitting...';
             submitBtn.classList.add('loading');
@@ -1233,11 +1289,24 @@
             fetch(SUBMIT_URL, {
                 method: 'POST',
                 body: formData
-            }).then(function() {
-                triggerSuccess();
+            }).then(function(res) {
+                if (res.ok) triggerSuccess();
+                else {
+                    alert('Submission failed on the server. Please try again.');
+                    isSubmitting = false;
+                    submitBtn.innerHTML = originalContent;
+                    submitBtn.classList.remove('loading');
+                    submitBtn.disabled = false;
+                    backBtn.disabled = false;
+                }
             }).catch(function(error) {
                 console.error('Submission Error:', error);
-                triggerSuccess();
+                alert('Connection error. Please try again.');
+                isSubmitting = false;
+                submitBtn.innerHTML = originalContent;
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+                backBtn.disabled = false;
             });
         }
 
@@ -1349,6 +1418,9 @@
 
         // Initialize state natively
         updateUI('init');
+        if (paperPublishedSelect) {
+            toggleConditionalFields(); // Set initial requirements based on default or reset value
+        }
     </script>
 
     <!-- Staff Access Icon -->

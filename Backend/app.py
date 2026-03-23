@@ -11,7 +11,14 @@ CORS(app)
 # MongoDB Connection
 # ===============================
 
-client = MongoClient("mongodb+srv://Admin:9IqmNsXiX9nqRFzn@cluster0.njjmlsv.mongodb.net/?appName=Cluster0")
+# Use optimized connection parameters for Atlas
+client = MongoClient(
+    "mongodb+srv://Admin:9IqmNsXiX9nqRFzn@cluster0.njjmlsv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    maxPoolSize=50,
+    connectTimeoutMS=5000,
+    socketTimeoutMS=45000,
+    serverSelectionTimeoutMS=5000
+)
 db = client["student_projects"]
 collection = db["submissions"]
 
@@ -23,6 +30,10 @@ UPLOAD_FOLDER = "uploads"
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+# Define indexes for faster search and sorting
+collection.create_index("reg_no", unique=True)
+collection.create_index("submitted_at")
 
 # ===============================
 # Submit Route
@@ -169,15 +180,43 @@ def delete_student(reg_no):
 
 
 # ===============================
-# Get Data Route
+# Get Data Routes
 # ===============================
 
 @app.route("/students", methods=["GET"])
 def get_students():
-
-    data = list(collection.find({}, {"_id": 0}))
+    # Return light-weight list for the dashboard table (Efficiency for 70+ users)
+    projection = {
+        "_id": 0, "name": 1, "reg_no": 1, "email": 1, "department": 1,
+        "project_title": 1, "technology_used": 1, "review_status": 1,
+        "report_submission": 1, "ee_sem1_grade": 1, "ee_sem2_grade": 1,
+        "submitted_at": 1
+    }
+    data = list(collection.find({}, projection).sort("submitted_at", -1))
     
-    # Fix datetime serialization issue
+    for d in data:
+        if "submitted_at" in d and isinstance(d["submitted_at"], datetime):
+            d["submitted_at"] = d["submitted_at"].isoformat()
+
+    return jsonify(data)
+
+@app.route("/student/<path:reg_no>", methods=["GET"])
+def get_student_details(reg_no):
+    # Fetch full record for the edit modal
+    student = collection.find_one({"reg_no": reg_no}, {"_id": 0})
+    if not student:
+        return jsonify({"error": "Student not found"}), 404
+        
+    if "submitted_at" in student and isinstance(student["submitted_at"], datetime):
+        student["submitted_at"] = student["submitted_at"].isoformat()
+        
+    return jsonify(student)
+
+@app.route("/students_full", methods=["GET"])
+def get_students_full():
+    # Fetch everything for a proper full export
+    data = list(collection.find({}, {"_id": 0}).sort("submitted_at", -1))
+    
     for d in data:
         if "submitted_at" in d and isinstance(d["submitted_at"], datetime):
             d["submitted_at"] = d["submitted_at"].isoformat()

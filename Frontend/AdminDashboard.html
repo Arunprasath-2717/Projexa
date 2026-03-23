@@ -729,18 +729,38 @@
     // Toggle requirements in Admin Modal
     function toggleAdminConditionalFields() {
         const isNo = document.getElementById('paper_published').value === 'No';
-        ['journal_name','isbn_no','journal_type','review_status','report_submission','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark'].forEach(f => {
-            const el = document.getElementById(f);
-            if(el) {
-                el.required = !isNo;
+        
+        // Match the logic in student form
+        const toManage = [
+            { id: 'journal_name', managed: true },
+            { id: 'isbn_no', managed: true },
+            { id: 'journal_type', managed: true },
+            { id: 'review_status', managed: true },
+            { id: 'report_submission', managed: true },
+            { id: 'ee_sem1_mark', managed: false },
+            { id: 'ee_sem2_mark', managed: false },
+            { id: 'ee_sem3_mark', managed: true }
+        ];
+
+        toManage.forEach(item => {
+            const el = document.getElementById(item.id);
+            if (el) {
+                const shouldDisable = item.managed && isNo;
+                el.disabled = shouldDisable;
+                el.required = !shouldDisable;
+                if (shouldDisable) el.value = "";
+
                 const group = el.closest('.form-group') || el.parentElement;
-                if(isNo) group.style.opacity = '0.7';
-                else group.style.opacity = '1';
-                // Adjust labels
+                group.style.opacity = shouldDisable ? '0.5' : '1';
+                group.style.pointerEvents = shouldDisable ? 'none' : 'auto';
+
                 const label = group.querySelector('label');
-                if(label) {
-                    if(isNo) label.innerHTML = label.innerText.replace(' *', '') + ' (Optional)';
-                    else if(!label.innerText.includes('*') && !label.innerText.includes('Optional')) label.innerHTML += ' *';
+                if (label) {
+                    if (!label.hasAttribute('data-orig')) {
+                        label.setAttribute('data-orig', label.textContent.trim().replace(/\s?\*$/, '').replace(' (N/A)', ''));
+                    }
+                    const base = label.getAttribute('data-orig');
+                    label.textContent = base + (shouldDisable ? ' (N/A)' : ' *');
                 }
             }
         });

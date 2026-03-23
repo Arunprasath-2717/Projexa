@@ -1123,49 +1123,59 @@
             const status = paperPublishedSelect.value;
             const isNo = (status === "No");
             
-            // Fields to toggle requirement
-            const journalFields = [
+            // Journal and Review fields to disable entirely if No
+            const fullDisableFields = [
                 document.querySelector('input[name="journal_name"]'),
                 document.querySelector('input[name="isbn_no"]'),
-                document.querySelector('select[name="journal_type"]')
-            ];
-            const reviewFields = [
+                document.querySelector('select[name="journal_type"]'),
                 document.querySelector('select[name="review_status"]'),
                 document.querySelector('select[name="report_submission"]'),
-                document.querySelector('input[name="ee_sem1_mark"]'),
-                document.querySelector('input[name="ee_sem2_mark"]'),
-                document.querySelector('input[name="ee_sem3_mark"]')
+                document.querySelector('input[name="file"]') // Disable report upload
+            ];
+            
+            // Mark fields: Only Sem 3 is affected by publication status
+            const marksConfig = [
+                { name: 'ee_sem1_mark', isManaged: false },
+                { name: 'ee_sem2_mark', isManaged: false },
+                { name: 'ee_sem3_mark', isManaged: true }
             ];
 
-            const allFields = [...journalFields, ...reviewFields];
+            // Handle Full Disable Group
+            fullDisableFields.forEach(field => {
+                if (field) {
+                    handleFieldState(field, isNo);
+                }
+            });
 
-            allFields.forEach(field => {
+            // Handle Marks Individually
+            marksConfig.forEach(config => {
+                const field = document.querySelector(`input[name="${config.name}"]`);
                 if (field) {
-                    field.required = !isNo;
-                    const group = field.closest('.input-group');
-                    if (group) {
-                        if (isNo) {
-                            group.style.opacity = "0.6";
-                            group.style.transition = "opacity 0.3s ease";
-                            // Optionally reset value
-                            if (field.tagName === 'SELECT') { if(!field.value) field.selectedIndex = 0; }
-                        } else {
-                            group.style.opacity = "1";
-                        }
-                    }
+                    handleFieldState(field, config.isManaged ? isNo : false);
                 }
             });
+        }
+
+        function handleFieldState(field, shouldDisable) {
+            field.disabled = shouldDisable;
+            field.required = !shouldDisable;
             
-            // Special labels updates
-            reviewFields.forEach(field => {
-                if (field) {
-                    const label = field.parentElement.querySelector('label');
-                    if (label) {
-                        if (isNo) label.innerHTML = label.innerText.replace(' *', '') + ' (Optional)';
-                        else label.innerHTML = label.innerText.replace(' (Optional)', '') + (label.innerText.includes('*') ? '' : ' *');
+            const group = field.closest('.input-group');
+            if (group) {
+                group.style.opacity = shouldDisable ? "0.4" : "1";
+                group.style.pointerEvents = shouldDisable ? "none" : "auto";
+                
+                const label = group.querySelector('label');
+                if (label) {
+                    // Initialize original text if not present to prevent vanishing
+                    if (!label.hasAttribute('data-orig')) {
+                        label.setAttribute('data-orig', label.textContent.trim().replace(/\s?\*$/, '').replace(' (N/A)', ''));
                     }
+                    const base = label.getAttribute('data-orig');
+                    label.textContent = base + (shouldDisable ? ' (N/A)' : ' *');
                 }
-            });
+            }
+            if (shouldDisable) field.value = ""; // Clear values if disabled to avoid stale data
         }
 
         function showError(input, message) {

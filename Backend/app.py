@@ -32,7 +32,7 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Define indexes for faster search and sorting
-collection.create_index("reg_no", unique=True)
+collection.create_index("reg_no")
 collection.create_index("submitted_at")
 
 # ===============================

@@ -20,7 +20,15 @@ client = MongoClient(
     serverSelectionTimeoutMS=5000
 )
 db = client["student_projects"]
-collection = db["submissions"]
+collection = db["submissions"] # Legacy/Fallback
+collection_A = db["submissions_A"]
+collection_B = db["submissions_B"]
+
+# Define indexes for all collections
+all_collections = [collection, collection_A, collection_B]
+for coll in all_collections:
+    coll.create_index("reg_no")
+    coll.create_index("submitted_at")
 
 # ===============================
 # File Upload Folder
@@ -30,10 +38,6 @@ UPLOAD_FOLDER = "uploads"
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-
-# Define indexes for faster search and sorting
-collection.create_index("reg_no")
-collection.create_index("submitted_at")
 
 # ===============================
 # Submit Route
@@ -63,12 +67,37 @@ def submit():
 
             file.save(file_path)
 
+        # Collect weekly abstracts
+        weekly_abstracts = []
+        for key in request.files:
+            if key.startswith("weekly_abstract_"):
+                week_num = key.split("_")[-1]
+                w_file = request.files[key]
+                if w_file and w_file.filename != "":
+                    reg_no = request.form.get("reg_no")
+                    # Use reg_no to ensure uniqueness
+                    w_filename = f"{reg_no}_week_{week_num}.pdf"
+                    w_file_path = os.path.join(UPLOAD_FOLDER, w_filename)
+                    w_file.save(w_file_path)
+                    weekly_abstracts.append({
+                        "week": int(week_num),
+                        "file_name": w_filename,
+                        "file_path": w_file_path
+                    })
+
+        # Determine target collection
+        class_section = request.form.get("class_section")
+        target_collection = collection
+        if class_section == "A":
+            target_collection = collection_A
+        elif class_section == "B":
+            target_collection = collection_B
+
         # Collect form data
-
         student_data = {
-
             "reg_no": request.form.get("reg_no"),
             "name": request.form.get("name"),
+            "class_section": class_section,
             "team_name": request.form.get("team_name"),
             "team_size": request.form.get("team_size"),
             "team_guide": request.form.get("team_guide"),
@@ -96,12 +125,12 @@ def submit():
 
             "file_name": filename,
             "file_path": file_path,
+            "weekly_abstracts": weekly_abstracts,
 
             "submitted_at": datetime.now()
-
         }
 
-        collection.insert_one(student_data)
+        target_collection.insert_one(student_data)
 
         return jsonify({
             "message": "Data stored successfully"
@@ -126,11 +155,19 @@ def admin_create():
         data["file_name"] = None
         data["file_path"] = None
         
+        # Determine target collection
+        class_section = data.get("class_section")
+        target_collection = collection
+        if class_section == "A":
+            target_collection = collection_A
+        elif class_section == "B":
+            target_collection = collection_B
+
         # Ensure it has a reg_no
         if not data.get("reg_no"):
             return jsonify({"error": "Register Number is required"}), 400
             
-        collection.insert_one(data)
+        target_collection.insert_one(data)
         
         return jsonify({"message": "Student record created successfully"})
     except Exception as e:
@@ -152,9 +189,15 @@ def update_student(reg_no):
         if not update_fields:
             return jsonify({"error": "No data provided for update"}), 400
             
-        result = collection.update_one({"reg_no": reg_no}, {"$set": update_fields})
+        # Try to find in all collections
+        found = False
+        for coll in all_collections:
+            result = coll.update_one({"reg_no": reg_no}, {"$set": update_fields})
+            if result.matched_count > 0:
+                found = True
+                break
         
-        if result.matched_count == 0:
+        if not found:
             return jsonify({"error": "Student not found"}), 404
             
         return jsonify({"message": "Student record updated successfully"})
@@ -169,9 +212,14 @@ def update_student(reg_no):
 @app.route("/delete/<path:reg_no>", methods=["DELETE"])
 def delete_student(reg_no):
     try:
-        result = collection.delete_one({"reg_no": reg_no})
+        found = False
+        for coll in all_collections:
+            result = coll.delete_one({"reg_no": reg_no})
+            if result.deleted_count > 0:
+                found = True
+                break
         
-        if result.deleted_count == 0:
+        if not found:
             return jsonify({"error": "Student not found"}), 404
             
         return jsonify({"message": "Student record deleted successfully"})
@@ -185,14 +233,29 @@ def delete_student(reg_no):
 
 @app.route("/students", methods=["GET"])
 def get_students():
-    # Return light-weight list for the dashboard table (Efficiency for 70+ users)
+    # Optional class filter
+    class_filter = request.args.get("class")
+    
     projection = {
         "_id": 0, "name": 1, "reg_no": 1, "email": 1, "department": 1,
         "project_title": 1, "technology_used": 1, "review_status": 1,
         "report_submission": 1, "ee_sem1_grade": 1, "ee_sem2_grade": 1,
-        "submitted_at": 1
+        "submitted_at": 1, "class_section": 1
     }
-    data = list(collection.find({}, projection).sort("submitted_at", -1))
+    
+    data = []
+    if class_filter == "A":
+        data = list(collection_A.find({}, projection))
+    elif class_filter == "B":
+        data = list(collection_B.find({}, projection))
+    else:
+        # Fetch from all and combine
+        data = list(collection_A.find({}, projection)) + \
+               list(collection_B.find({}, projection)) + \
+               list(collection.find({}, projection))
+    
+    # Sort after combining
+    data.sort(key=lambda x: x.get("submitted_at", datetime.min), reverse=True)
     
     for d in data:
         if "submitted_at" in d and isinstance(d["submitted_at"], datetime):
@@ -202,8 +265,13 @@ def get_students():
 
 @app.route("/student/<path:reg_no>", methods=["GET"])
 def get_student_details(reg_no):
-    # Fetch full record for the edit modal
-    student = collection.find_one({"reg_no": reg_no}, {"_id": 0})
+    # Fetch from any collection
+    student = None
+    for coll in all_collections:
+        student = coll.find_one({"reg_no": reg_no}, {"_id": 0})
+        if student:
+            break
+
     if not student:
         return jsonify({"error": "Student not found"}), 404
         
@@ -214,8 +282,12 @@ def get_student_details(reg_no):
 
 @app.route("/students_full", methods=["GET"])
 def get_students_full():
-    # Fetch everything for a proper full export
-    data = list(collection.find({}, {"_id": 0}).sort("submitted_at", -1))
+    # Fetch from all collections
+    data = list(collection_A.find({}, {"_id": 0})) + \
+           list(collection_B.find({}, {"_id": 0})) + \
+           list(collection.find({}, {"_id": 0}))
+    
+    data.sort(key=lambda x: x.get("submitted_at", datetime.min), reverse=True)
     
     for d in data:
         if "submitted_at" in d and isinstance(d["submitted_at"], datetime):

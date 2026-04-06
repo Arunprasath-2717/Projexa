@@ -1,34 +1,40 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from pymongo import MongoClient
-import os
 from datetime import datetime
+import logging
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = app.logger
 
 # ===============================
 # MongoDB Connection
 # ===============================
 
 # Use optimized connection parameters for Atlas
+MONGO_URI = os.getenv("MONGO_URI")
+DB_NAME = os.getenv("DB_NAME", "student_projects")
+
 client = MongoClient(
-    "mongodb+srv://Admin:9IqmNsXiX9nqRFzn@cluster0.njjmlsv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    MONGO_URI,
     maxPoolSize=50,
     connectTimeoutMS=5000,
     socketTimeoutMS=45000,
     serverSelectionTimeoutMS=5000
 )
-db = client["student_projects"]
+db = client[DB_NAME]
 collection = db["submissions"] # Legacy/Fallback
-collection_A = db["submissions_A"]
-collection_B = db["submissions_B"]
 
-# Define indexes for all collections
-all_collections = [collection, collection_A, collection_B]
-for coll in all_collections:
-    coll.create_index("reg_no")
-    coll.create_index("submitted_at")
+def get_collection(department, year, class_section):
+    dept = department if department else "Unknown"
+    yr = year if year else "Unknown"
+    sec = class_section if class_section else "Unknown"
+    return db[f"submissions_{dept}_Y{yr}_{sec}"]
 
 # ===============================
 # File Upload Folder
@@ -87,17 +93,16 @@ def submit():
 
         # Determine target collection
         class_section = request.form.get("class_section")
-        target_collection = collection
-        if class_section == "A":
-            target_collection = collection_A
-        elif class_section == "B":
-            target_collection = collection_B
+        department = request.form.get("department")
+        year = request.form.get("year")
+        target_collection = get_collection(department, year, class_section)
 
         # Collect form data
         student_data = {
             "reg_no": request.form.get("reg_no"),
             "name": request.form.get("name"),
             "class_section": class_section,
+            "year": year,
             "team_name": request.form.get("team_name"),
             "team_size": request.form.get("team_size"),
             "team_guide": request.form.get("team_guide"),
@@ -137,9 +142,9 @@ def submit():
         })
 
     except Exception as e:
-
+        logger.error(f"Submission Error: {str(e)}")
         return jsonify({
-            "error": str(e)
+            "error": "Failed to store record"
         }), 500
 
 
@@ -157,11 +162,9 @@ def admin_create():
         
         # Determine target collection
         class_section = data.get("class_section")
-        target_collection = collection
-        if class_section == "A":
-            target_collection = collection_A
-        elif class_section == "B":
-            target_collection = collection_B
+        department = data.get("department")
+        year = data.get("year")
+        target_collection = get_collection(department, year, class_section)
 
         # Ensure it has a reg_no
         if not data.get("reg_no"):
@@ -189,13 +192,15 @@ def update_student(reg_no):
         if not update_fields:
             return jsonify({"error": "No data provided for update"}), 400
             
-        # Try to find in all collections
+        # Try to find in all available collections
         found = False
-        for coll in all_collections:
-            result = coll.update_one({"reg_no": reg_no}, {"$set": update_fields})
-            if result.matched_count > 0:
-                found = True
-                break
+        for coll_name in db.list_collection_names():
+            if coll_name.startswith("submissions"):
+                coll = db[coll_name]
+                result = coll.update_one({"reg_no": reg_no}, {"$set": update_fields})
+                if result.matched_count > 0:
+                    found = True
+                    break
         
         if not found:
             return jsonify({"error": "Student not found"}), 404
@@ -213,11 +218,13 @@ def update_student(reg_no):
 def delete_student(reg_no):
     try:
         found = False
-        for coll in all_collections:
-            result = coll.delete_one({"reg_no": reg_no})
-            if result.deleted_count > 0:
-                found = True
-                break
+        for coll_name in db.list_collection_names():
+            if coll_name.startswith("submissions"):
+                coll = db[coll_name]
+                result = coll.delete_one({"reg_no": reg_no})
+                if result.deleted_count > 0:
+                    found = True
+                    break
         
         if not found:
             return jsonify({"error": "Student not found"}), 404
@@ -235,24 +242,32 @@ def delete_student(reg_no):
 def get_students():
     # Optional class filter
     class_filter = request.args.get("class")
+    department_filter = request.args.get("department")
+    year_filter = request.args.get("year")
     
     projection = {
         "_id": 0, "name": 1, "reg_no": 1, "email": 1, "department": 1,
-        "project_title": 1, "technology_used": 1, "review_status": 1,
+        "year": 1, "project_title": 1, "technology_used": 1, "review_status": 1,
         "report_submission": 1, "ee_sem1_grade": 1, "ee_sem2_grade": 1,
         "submitted_at": 1, "class_section": 1
     }
     
     data = []
-    if class_filter == "A":
-        data = list(collection_A.find({}, projection))
-    elif class_filter == "B":
-        data = list(collection_B.find({}, projection))
+    if department_filter and class_filter and year_filter:
+        coll = get_collection(department_filter, year_filter, class_filter)
+        data = list(coll.find({}, projection))
     else:
-        # Fetch from all and combine
-        data = list(collection_A.find({}, projection)) + \
-               list(collection_B.find({}, projection)) + \
-               list(collection.find({}, projection))
+        # Fetch from all and combine (fallback or full fetch)
+        for coll_name in db.list_collection_names():
+            if coll_name.startswith("submissions"):
+                if department_filter and f"_{department_filter}_" not in coll_name:
+                    continue
+                if year_filter and f"_Y{year_filter}_" not in coll_name:
+                    continue
+                if class_filter and not coll_name.endswith(f"_{class_filter}"):
+                    continue
+                coll = db[coll_name]
+                data.extend(list(coll.find({}, projection)))
     
     # Sort after combining
     data.sort(key=lambda x: x.get("submitted_at", datetime.min), reverse=True)
@@ -267,10 +282,12 @@ def get_students():
 def get_student_details(reg_no):
     # Fetch from any collection
     student = None
-    for coll in all_collections:
-        student = coll.find_one({"reg_no": reg_no}, {"_id": 0})
-        if student:
-            break
+    for coll_name in db.list_collection_names():
+        if coll_name.startswith("submissions"):
+            coll = db[coll_name]
+            student = coll.find_one({"reg_no": reg_no}, {"_id": 0})
+            if student:
+                break
 
     if not student:
         return jsonify({"error": "Student not found"}), 404
@@ -283,9 +300,11 @@ def get_student_details(reg_no):
 @app.route("/students_full", methods=["GET"])
 def get_students_full():
     # Fetch from all collections
-    data = list(collection_A.find({}, {"_id": 0})) + \
-           list(collection_B.find({}, {"_id": 0})) + \
-           list(collection.find({}, {"_id": 0}))
+    data = []
+    for coll_name in db.list_collection_names():
+        if coll_name.startswith("submissions"):
+            coll = db[coll_name]
+            data.extend(list(coll.find({}, {"_id": 0})))
     
     data.sort(key=lambda x: x.get("submitted_at", datetime.min), reverse=True)
     

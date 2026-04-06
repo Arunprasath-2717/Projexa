@@ -90,23 +90,38 @@
         <p>Enter administrative password to manage projects</p>
         
         <form id="loginForm">
+            <div class="input-group" style="margin-bottom: 15px;">
+                <label>Department</label>
+                <select id="department" required style="width: 100%; padding: 14px 18px; border-radius: 12px; background: rgba(255,255,255,0.8); border: 1px solid rgba(203,213,225,0.8); font-size: 15px; outline: none; transition: all 0.3s; cursor: pointer;">
+                    <option value="" disabled selected>Select Department</option>
+                    <option value="CSE">Computer Science (CSE)</option>
+                    <option value="IT">Information Technology (IT)</option>
+                    <option value="ECE">Electronics & Communication (ECE)</option>
+                    <option value="EEE">Electrical & Electronics (EEE)</option>
+                    <option value="MECH">Mechanical Engineering (MECH)</option>
+                    <option value="CIVIL">Civil Engineering (CIVIL)</option>
+                </select>
+            </div>
             <div class="input-group">
-                <label>Admin Password</label>
+                <label>Department Password</label>
                 <input type="password" id="password" placeholder="••••••••" required>
             </div>
             <button type="submit">Access Dashboard</button>
-            <div class="alert" id="errorAlert">Invalid Password! Access Denied.</div>
+            <div class="alert" id="errorAlert">Invalid Credentials! Access Denied.</div>
         </form>
     </div>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            const dept = document.getElementById('department').value;
             const pass = document.getElementById('password').value;
             const alertBox = document.getElementById('errorAlert');
             
-            if(pass === 'admin@123') {
+            // Allow specified generic password with or without spelling mistake, or exact department formatted one
+            if(pass === 'Deparment@123' || pass === 'Department@123' || pass === `${dept}@123`) {
                 sessionStorage.setItem('adminAuth', 'true');
+                sessionStorage.setItem('adminDept', dept);
                 window.location.href = 'AdminDashboard.html';
             } else {
                 alertBox.classList.remove('active');

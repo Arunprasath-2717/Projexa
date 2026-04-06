@@ -118,8 +118,9 @@
             const pass = document.getElementById('password').value;
             const alertBox = document.getElementById('errorAlert');
             
-            // Allow specified generic password with or without spelling mistake, or exact department formatted one
-            if(pass === 'Deparment@123' || pass === 'Department@123' || pass === `${dept}@123`) {
+            // Department-specific password: lowercase dept name + @123
+            const expectedPass = dept.toLowerCase() + '@123';
+            if(pass === expectedPass) {
                 sessionStorage.setItem('adminAuth', 'true');
                 sessionStorage.setItem('adminDept', dept);
                 window.location.href = 'AdminDashboard.html';

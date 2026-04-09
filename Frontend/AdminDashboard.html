@@ -160,6 +160,9 @@
                     <div class="form-group"><label>Year</label>
                         <select id="f_year"><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option></select>
                     </div>
+                    <div class="form-group"><label>Academic Year</label>
+                        <select id="f_academic_year"><option value="">Select</option><option>2023-2024</option><option>2024-2025</option><option>2025-2026</option><option>2026-2027</option><option>2027-2028</option></select>
+                    </div>
                     <div class="form-group"><label>Section</label>
                         <select id="f_class_section"><option value="A">Section A</option><option value="B">Section B</option><option value="C">Section C</option><option value="D">Section D</option><option value="E">Section E</option></select>
                     </div>
@@ -384,7 +387,7 @@
     //  MODAL (CREATE / EDIT)
     // ═══════════════════════════════════════
 
-    const formFields = ['reg_no','name','email','phone','department','year','class_section','review_status','project_title','technology_used','team_guide','team_name','team_size','project_domain','project_description','paper_published','journal_name','isbn_no','journal_type','report_submission','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark','other_projects'];
+    const formFields = ['reg_no','name','email','phone','department','year','academic_year','class_section','review_status','project_title','technology_used','team_guide','team_name','team_size','project_domain','project_description','paper_published','journal_name','isbn_no','journal_type','report_submission','ee_sem1_mark','ee_sem2_mark','ee_sem3_mark','other_projects'];
 
     function resetForm() {
         document.getElementById('studentForm').reset();
@@ -429,7 +432,7 @@
                 isbn_no: s.isbn_no, journal_type: s.journal_type,
                 report_submission: s.report_submission,
                 ee_sem1_mark: s.ee_sem1_grade, ee_sem2_mark: s.ee_sem2_grade, ee_sem3_mark: s.ee_sem3_grade,
-                other_projects: s.other_projects, year: s.year, class_section: s.class_section
+                other_projects: s.other_projects, year: s.year, academic_year: s.academic_year, class_section: s.class_section
             };
 
             for (const [key, val] of Object.entries(map)) {
@@ -474,7 +477,7 @@
         const payload = {};
         const fieldMap = {
             reg_no: 'f_reg_no', name: 'f_name', email: 'f_email', phone: 'f_phone',
-            department: 'f_department', year: 'f_year', class_section: 'f_class_section',
+            department: 'f_department', year: 'f_year', academic_year: 'f_academic_year', class_section: 'f_class_section',
             review_status: 'f_review_status',
             project_title: 'f_project_title', technology_used: 'f_technology_used',
             team_guide: 'f_team_guide', team_name: 'f_team_name', team_size: 'f_team_size',

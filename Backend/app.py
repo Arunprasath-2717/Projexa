@@ -30,11 +30,11 @@ client = MongoClient(
 db = client[DB_NAME]
 collection = db["submissions"] # Legacy/Fallback
 
-def get_collection(department, year, class_section):
+def get_collection(department, academic_year, class_section):
     dept = department if department else "Unknown"
-    yr = year if year else "Unknown"
+    yr = academic_year if academic_year else "Unknown"
     sec = class_section if class_section else "Unknown"
-    return db[f"submissions_{dept}_Y{yr}_{sec}"]
+    return db[f"{dept}_{yr}_{sec}"]
 
 # ===============================
 # File Upload Folder
@@ -63,15 +63,34 @@ def submit():
         if file and file.filename != "":
 
             student_name = request.form.get("name")
+            department = request.form.get("department", "Unknown")
+            academic_year = request.form.get("academic_year", "Unknown")
+            class_section = request.form.get("class_section", "Unknown")
 
             filename = f"{student_name}.pdf"
+            
+            # store the data as department->year->section (file structure)
+            save_dir = os.path.join(UPLOAD_FOLDER, department, academic_year, class_section)
+            os.makedirs(save_dir, exist_ok=True)
 
             file_path = os.path.join(
-                UPLOAD_FOLDER,
+                save_dir,
                 filename
             )
 
             file.save(file_path)
+
+        class_section = request.form.get("class_section", "Unknown")
+        department = request.form.get("department", "Unknown")
+        academic_year = request.form.get("academic_year", "Unknown")
+        year = request.form.get("year", "Unknown")
+        
+        # Determine target collection based on department->year->section structure
+        target_collection = get_collection(department, academic_year, class_section)
+        
+        # Make abstract directory
+        abstract_dir = os.path.join(UPLOAD_FOLDER, department, academic_year, class_section, "abstracts")
+        os.makedirs(abstract_dir, exist_ok=True)
 
         # Collect weekly abstracts
         weekly_abstracts = []
@@ -83,7 +102,7 @@ def submit():
                     reg_no = request.form.get("reg_no")
                     # Use reg_no to ensure uniqueness
                     w_filename = f"{reg_no}_week_{week_num}.pdf"
-                    w_file_path = os.path.join(UPLOAD_FOLDER, w_filename)
+                    w_file_path = os.path.join(abstract_dir, w_filename)
                     w_file.save(w_file_path)
                     weekly_abstracts.append({
                         "week": int(week_num),
@@ -91,17 +110,12 @@ def submit():
                         "file_path": w_file_path
                     })
 
-        # Determine target collection
-        class_section = request.form.get("class_section")
-        department = request.form.get("department")
-        year = request.form.get("year")
-        target_collection = get_collection(department, year, class_section)
-
         # Collect form data
         student_data = {
             "reg_no": request.form.get("reg_no"),
             "name": request.form.get("name"),
             "class_section": class_section,
+            "academic_year": academic_year,
             "year": year,
             "team_name": request.form.get("team_name"),
             "team_size": request.form.get("team_size"),
@@ -161,10 +175,10 @@ def admin_create():
         data["file_path"] = None
         
         # Determine target collection
-        class_section = data.get("class_section")
-        department = data.get("department")
-        year = data.get("year")
-        target_collection = get_collection(department, year, class_section)
+        class_section = data.get("class_section", "Unknown")
+        department = data.get("department", "Unknown")
+        academic_year = data.get("academic_year", "Unknown")
+        target_collection = get_collection(department, academic_year, class_section)
 
         # Ensure it has a reg_no
         if not data.get("reg_no"):
@@ -315,9 +329,13 @@ def get_students_full():
     return jsonify(data)
 
 
-@app.route("/uploads/<filename>")
+@app.route("/uploads/<path:filename>")
 def serve_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    filename = os.path.basename(filename) # To handle both just a name and full paths if passed
+    for root, dirs, files in os.walk(UPLOAD_FOLDER):
+        if filename in files:
+            return send_from_directory(root, filename)
+    return "File not found", 404
 
 
 # ===============================

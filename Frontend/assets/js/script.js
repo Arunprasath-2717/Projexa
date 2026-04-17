@@ -1,5 +1,5 @@
 // Update the 'PRODUCTION_URL' once you've deployed your backend to Render.
-const PRODUCTION_URL = "https://projexa-backend.onrender.com"; 
+const PRODUCTION_URL = "https://projexa-6m8h.onrender.com"; 
 const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:")
     ? "http://127.0.0.1:5000"
     : PRODUCTION_URL;

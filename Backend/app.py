@@ -32,13 +32,10 @@ client = MongoClient(
     serverSelectionTimeoutMS=5000
 )
 db = client[DB_NAME]
-collection = db["submissions"] # Legacy/Fallback
 
-def get_collection(department, academic_year, class_section):
-    dept = department if department else "Unknown"
-    yr = academic_year if academic_year else "Unknown"
-    sec = class_section if class_section else "Unknown"
-    return db[f"{dept}_{yr}_{sec}"]
+# Using a single standardized collection makes queries, updates, and deletes 
+# much more efficient and scalable than managing dynamic collections.
+collection = db["submissions"]
 
 # ===============================
 # File Upload Folder
@@ -64,16 +61,17 @@ def submit():
         filename = None
         file_path = None
 
-        if file and file.filename != "":
+        student_name = request.form.get("name", "Unknown")
+        department = request.form.get("department", "Unknown")
+        academic_year = request.form.get("academic_year", "Unknown")
+        class_section = request.form.get("class_section", "Unknown")
+        year = request.form.get("year", "Unknown")
 
-            student_name = request.form.get("name")
-            department = request.form.get("department", "Unknown")
-            academic_year = request.form.get("academic_year", "Unknown")
-            class_section = request.form.get("class_section", "Unknown")
+        if file and file.filename != "":
 
             filename = f"{student_name}.pdf"
             
-            # store the data as department->year->section (file structure)
+            # store the data as department->year->section (file structure locally)
             save_dir = os.path.join(UPLOAD_FOLDER, department, academic_year, class_section)
             os.makedirs(save_dir, exist_ok=True)
 
@@ -84,14 +82,6 @@ def submit():
 
             file.save(file_path)
 
-        class_section = request.form.get("class_section", "Unknown")
-        department = request.form.get("department", "Unknown")
-        academic_year = request.form.get("academic_year", "Unknown")
-        year = request.form.get("year", "Unknown")
-        
-        # Determine target collection based on department->year->section structure
-        target_collection = get_collection(department, academic_year, class_section)
-        
         # Make abstract directory
         abstract_dir = os.path.join(UPLOAD_FOLDER, department, academic_year, class_section, "abstracts")
         os.makedirs(abstract_dir, exist_ok=True)
@@ -117,14 +107,14 @@ def submit():
         # Collect form data
         student_data = {
             "reg_no": request.form.get("reg_no"),
-            "name": request.form.get("name"),
+            "name": student_name,
             "class_section": class_section,
             "academic_year": academic_year,
             "year": year,
             "team_name": request.form.get("team_name"),
             "team_size": request.form.get("team_size"),
             "team_guide": request.form.get("team_guide"),
-            "department": request.form.get("department"),
+            "department": department,
             "email": request.form.get("email"),
             "phone": request.form.get("phone"),
 
@@ -153,7 +143,8 @@ def submit():
             "submitted_at": datetime.now()
         }
 
-        target_collection.insert_one(student_data)
+        # Save to single centralized MongoDB Collection
+        collection.insert_one(student_data)
 
         return jsonify({
             "message": "Data stored successfully"
@@ -178,17 +169,11 @@ def admin_create():
         data["file_name"] = None
         data["file_path"] = None
         
-        # Determine target collection
-        class_section = data.get("class_section", "Unknown")
-        department = data.get("department", "Unknown")
-        academic_year = data.get("academic_year", "Unknown")
-        target_collection = get_collection(department, academic_year, class_section)
-
         # Ensure it has a reg_no
         if not data.get("reg_no"):
             return jsonify({"error": "Register Number is required"}), 400
             
-        target_collection.insert_one(data)
+        collection.insert_one(data)
         
         return jsonify({"message": "Student record created successfully"})
     except Exception as e:
@@ -210,17 +195,9 @@ def update_student(reg_no):
         if not update_fields:
             return jsonify({"error": "No data provided for update"}), 400
             
-        # Try to find in all available collections
-        found = False
-        for coll_name in db.list_collection_names():
-            if coll_name.startswith("submissions"):
-                coll = db[coll_name]
-                result = coll.update_one({"reg_no": reg_no}, {"$set": update_fields})
-                if result.matched_count > 0:
-                    found = True
-                    break
+        result = collection.update_one({"reg_no": reg_no}, {"$set": update_fields})
         
-        if not found:
+        if result.matched_count == 0:
             return jsonify({"error": "Student not found"}), 404
             
         return jsonify({"message": "Student record updated successfully"})
@@ -235,16 +212,9 @@ def update_student(reg_no):
 @app.route("/delete/<path:reg_no>", methods=["DELETE"])
 def delete_student(reg_no):
     try:
-        found = False
-        for coll_name in db.list_collection_names():
-            if coll_name.startswith("submissions"):
-                coll = db[coll_name]
-                result = coll.delete_one({"reg_no": reg_no})
-                if result.deleted_count > 0:
-                    found = True
-                    break
+        result = collection.delete_one({"reg_no": reg_no})
         
-        if not found:
+        if result.deleted_count == 0:
             return jsonify({"error": "Student not found"}), 404
             
         return jsonify({"message": "Student record deleted successfully"})
@@ -258,11 +228,20 @@ def delete_student(reg_no):
 
 @app.route("/students", methods=["GET"])
 def get_students():
-    # Optional class filter
+    # Built-in robust filtering!
+    query = {}
+    
     class_filter = request.args.get("class")
     department_filter = request.args.get("department")
     year_filter = request.args.get("year")
     
+    if class_filter:
+        query["class_section"] = class_filter
+    if department_filter:
+        query["department"] = department_filter
+    if year_filter:
+        query["year"] = year_filter
+        
     projection = {
         "_id": 0, "name": 1, "reg_no": 1, "email": 1, "department": 1,
         "year": 1, "project_title": 1, "technology_used": 1, "review_status": 1,
@@ -270,24 +249,7 @@ def get_students():
         "submitted_at": 1, "class_section": 1
     }
     
-    data = []
-    if department_filter and class_filter and year_filter:
-        coll = get_collection(department_filter, year_filter, class_filter)
-        data = list(coll.find({}, projection))
-    else:
-        # Fetch from all and combine (fallback or full fetch)
-        for coll_name in db.list_collection_names():
-            if coll_name.startswith("submissions"):
-                if department_filter and f"_{department_filter}_" not in coll_name:
-                    continue
-                if year_filter and f"_Y{year_filter}_" not in coll_name:
-                    continue
-                if class_filter and not coll_name.endswith(f"_{class_filter}"):
-                    continue
-                coll = db[coll_name]
-                data.extend(list(coll.find({}, projection)))
-    
-    # Sort after combining
+    data = list(collection.find(query, projection))
     data.sort(key=lambda x: x.get("submitted_at", datetime.min), reverse=True)
     
     for d in data:
@@ -298,14 +260,7 @@ def get_students():
 
 @app.route("/student/<path:reg_no>", methods=["GET"])
 def get_student_details(reg_no):
-    # Fetch from any collection
-    student = None
-    for coll_name in db.list_collection_names():
-        if coll_name.startswith("submissions"):
-            coll = db[coll_name]
-            student = coll.find_one({"reg_no": reg_no}, {"_id": 0})
-            if student:
-                break
+    student = collection.find_one({"reg_no": reg_no}, {"_id": 0})
 
     if not student:
         return jsonify({"error": "Student not found"}), 404
@@ -317,13 +272,7 @@ def get_student_details(reg_no):
 
 @app.route("/students_full", methods=["GET"])
 def get_students_full():
-    # Fetch from all collections
-    data = []
-    for coll_name in db.list_collection_names():
-        if coll_name.startswith("submissions"):
-            coll = db[coll_name]
-            data.extend(list(coll.find({}, {"_id": 0})))
-    
+    data = list(collection.find({}, {"_id": 0}))
     data.sort(key=lambda x: x.get("submitted_at", datetime.min), reverse=True)
     
     for d in data:
@@ -348,4 +297,4 @@ def serve_file(filename):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)

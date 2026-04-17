@@ -3,3 +3,4 @@ flask-cors
 pymongo[srv]
 python-dotenv
 datetime
+gunicorn
